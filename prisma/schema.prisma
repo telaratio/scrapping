@@ -1,0 +1,103 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // Remplacer par votre fournisseur de base de données si nécessaire
+  url      = env("DATABASE_URL")
+}
+
+model Utilisateur {
+  id                    Int       @id @default(autoincrement())
+  email                 String    @unique
+  mot_de_passe         String
+  nom                  String
+  role                 Role      @default(USER)
+  actif                Boolean   @default(true)
+  email_verifie        Boolean   @default(false)
+  token_verification   String?   @unique
+  token_reset_mdp      String?   @unique
+  date_expiration_reset DateTime?
+  date_creation        DateTime  @default(now())
+  date_modification    DateTime  @default(now()) @updatedAt
+  derniere_connexion   DateTime?
+  
+  // Relations
+  sessions             Session[]       // Sessions de connexion de l'utilisateur
+  cles_api            CleApi[]        // Clés API de l'utilisateur
+  logs_scraping       LogScraping[]   // Logs des opérations de scraping
+
+  @@map("utilisateurs")
+}
+
+model Session {
+  id            Int      @id @default(autoincrement())
+  utilisateur_id Int
+  token         String   @unique
+  user_agent    String?
+  ip_address    String?
+  expire_le     DateTime
+  date_creation DateTime @default(now())
+  
+  // Relations
+  utilisateur   Utilisateur @relation(fields: [utilisateur_id], references: [id])
+
+  @@map("sessions")
+}
+
+model CleApi {
+  id              Int       @id @default(autoincrement())
+  cle             String    @unique
+  nom             String
+  utilisateur_id  Int
+  actif           Boolean   @default(true)
+  date_creation   DateTime  @default(now())
+  date_modification DateTime @default(now()) @updatedAt
+  
+  // Relations
+  utilisateur     Utilisateur @relation(fields: [utilisateur_id], references: [id])
+  logs_scraping   LogScraping[]
+
+  @@map("cles_api")
+  @@index([utilisateur_id])
+  @@index([cle])
+}
+
+model LogScraping {
+  id              Int       @id @default(autoincrement())
+  cle_api_id      Int
+  type_scraping   TypeScraping
+  requete         String
+  statut          StatutScraping
+  donnees         Json?
+  date_creation   DateTime  @default(now())
+  
+  // Relations
+  cle_api         CleApi    @relation(fields: [cle_api_id], references: [id])
+  utilisateur     Utilisateur @relation(fields: [utilisateur_id], references: [id])
+  utilisateur_id  Int
+
+  @@map("logs_scraping")
+  @@index([cle_api_id])
+  @@index([utilisateur_id])
+  @@index([date_creation])
+}
+
+enum Role {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum TypeScraping {
+  GOOGLE_SERP
+  WEBSITE
+}
+
+enum StatutScraping {
+  SUCCESS
+  FAILED
+  PENDING
+}
