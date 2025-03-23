@@ -15,7 +15,9 @@ const publicRoutes = [
     '/api/auth/register',
     '/api/auth/verify-email',
     '/api/auth/request-reset',
-    '/api/auth/reset-password'
+    '/api/auth/reset-password',
+    '/api/scraping/auth/webpage',
+    '/api/scraping/auth/google'
 ];
 
 /**
