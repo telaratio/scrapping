@@ -106,7 +106,7 @@ export class GoogleSerpScraper {
     async setupAntiBot(page) {
         // User-Agent aléatoire
         await page.setUserAgent(randomUserAgent());
-        
+        console.log('User-Agent:', randomUserAgent());
         // Configuration de la vue avec des dimensions aléatoires
         const viewportWidth = Math.floor(Math.random() * (1920 - 1366) + 1366);
         const viewportHeight = Math.floor(Math.random() * (1080 - 768) + 768);

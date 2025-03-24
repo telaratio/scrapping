@@ -65,9 +65,21 @@ export async function logout() {
 }
 
 /**
- * Récupère le token JWT
+ * Récupère le token JWT depuis les cookies
  * @returns {string|null} Le token JWT ou null si non connecté
  */
-export function getToken() {
-    return browser ? localStorage.getItem('jwt') : null;
+export async function getToken() {
+    if (!browser) return null;
+    
+    try {
+        // Faire une requête à un endpoint qui retourne le token
+        const response = await fetch('/api/auth/token');
+        if (!response.ok) return null;
+        
+        const data = await response.json();
+        return data.token;
+    } catch (error) {
+        console.error('Erreur lors de la récupération du token:', error);
+        return null;
+    }
 } 

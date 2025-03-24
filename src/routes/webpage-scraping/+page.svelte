@@ -1,5 +1,16 @@
 <!-- Interface de test pour le scraping de pages web -->
 <script>
+    import { onMount } from 'svelte';
+    import { user, checkAuth } from '$lib/auth';
+    import { goto } from '$app/navigation';
+
+    // Vérification de l'authentification au chargement
+    onMount(() => {
+        if (!checkAuth()) {
+            goto('/login');
+        }
+    });
+
     let url = '';
     let loading = false;
     let error = null;
@@ -14,7 +25,8 @@
             const response = await fetch('/api/scraping/webpage', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('jwt')}`
                 },
                 body: JSON.stringify({ url })
             });

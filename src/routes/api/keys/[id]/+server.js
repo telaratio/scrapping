@@ -1,97 +1,118 @@
 import { json } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma';
+import { verifyJWT } from '$lib/server/auth';
 
-/**
- * PATCH /api/keys/:id
- * Active ou désactive une clé API
- */
-export async function PATCH({ params, request, locals }) {
+// PATCH /api/keys/[id] - Mettre à jour une clé API
+export async function PATCH({ params, request, cookies }) {
+    console.log('PATCH /api/keys/[id] - cookies:', cookies.getAll());
+    console.log('PATCH /api/keys/[id] - params:', params);
+    
+    // Récupérer le token depuis les cookies
+    const token = cookies.get('jwt');
+    console.log('PATCH /api/keys/[id] - token:', token);
+
+    if (!token) {
+        console.log('PATCH /api/keys/[id] - Non autorisé: pas de token');
+        return json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    // Vérifier le token
+    const userData = verifyJWT(token);
+    console.log('PATCH /api/keys/[id] - userData:', userData);
+
+    if (!userData) {
+        console.log('PATCH /api/keys/[id] - Non autorisé: token invalide');
+        return json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     try {
-        // Vérification de l'authentification via hooks.server.js
-        if (!locals.user) {
-            return json({ error: 'Non authentifié' }, { status: 401 });
-        }
-
-        const id = parseInt(params.id);
-        if (isNaN(id)) {
-            return json({ error: 'ID invalide' }, { status: 400 });
-        }
-
-        // Récupération et validation du nouvel état
         const { actif } = await request.json();
+        console.log('PATCH /api/keys/[id] - Données reçues:', { actif });
+        
         if (typeof actif !== 'boolean') {
-            return json({ error: 'État invalide' }, { status: 400 });
+            console.log('PATCH /api/keys/[id] - Erreur: actif doit être un booléen');
+            return json({ error: 'Le statut actif doit être un booléen' }, { status: 400 });
         }
 
-        // Vérification et mise à jour de la clé
-        const cleExistante = await prisma.cleApi.findFirst({
+        const key = await prisma.cleApi.findFirst({
             where: {
-                id,
-                utilisateur_id: locals.user.id
+                id: parseInt(params.id),
+                utilisateur_id: userData.id
             }
         });
 
-        if (!cleExistante) {
-            return json({ error: 'Clé non trouvée' }, { status: 404 });
+        if (!key) {
+            console.log('PATCH /api/keys/[id] - Clé non trouvée');
+            return json({ error: 'Clé API non trouvée' }, { status: 404 });
         }
 
-        const cleModifiee = await prisma.cleApi.update({
-            where: { id },
-            data: { 
-                actif,
-                date_modification: new Date()
+        console.log('PATCH /api/keys/[id] - Clé trouvée:', key);
+
+        const updatedKey = await prisma.cleApi.update({
+            where: {
+                id: parseInt(params.id)
+            },
+            data: {
+                actif
             }
         });
 
-        return json({
-            id: cleModifiee.id,
-            nom: cleModifiee.nom,
-            actif: cleModifiee.actif,
-            date_modification: cleModifiee.date_modification
-        });
-
+        console.log('PATCH /api/keys/[id] - Clé mise à jour:', updatedKey);
+        return json(updatedKey);
     } catch (error) {
-        console.error('Erreur lors de la modification de la clé API:', error);
+        console.error('Erreur lors de la mise à jour de la clé API:', error);
         return json({ error: 'Erreur serveur' }, { status: 500 });
     }
 }
 
-/**
- * DELETE /api/keys/:id
- * Supprime une clé API
- */
-export async function DELETE({ params, locals }) {
+// DELETE /api/keys/[id] - Supprimer une clé API
+export async function DELETE({ params, cookies }) {
+    console.log('DELETE /api/keys/[id] - cookies:', cookies.getAll());
+    console.log('DELETE /api/keys/[id] - params:', params);
+    
+    // Récupérer le token depuis les cookies
+    const token = cookies.get('jwt');
+    console.log('DELETE /api/keys/[id] - token:', token);
+
+    if (!token) {
+        console.log('DELETE /api/keys/[id] - Non autorisé: pas de token');
+        return json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    // Vérifier le token
+    const userData = verifyJWT(token);
+    console.log('DELETE /api/keys/[id] - userData:', userData);
+
+    if (!userData) {
+        console.log('DELETE /api/keys/[id] - Non autorisé: token invalide');
+        return json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     try {
-        // Vérification de l'authentification via hooks.server.js
-        if (!locals.user) {
-            return json({ error: 'Non authentifié' }, { status: 401 });
-        }
-
-        const id = parseInt(params.id);
-        if (isNaN(id)) {
-            return json({ error: 'ID invalide' }, { status: 400 });
-        }
-
-        // Vérification et suppression de la clé
-        const cleExistante = await prisma.cleApi.findFirst({
+        const key = await prisma.cleApi.findFirst({
             where: {
-                id,
-                utilisateur_id: locals.user.id
+                id: parseInt(params.id),
+                utilisateur_id: userData.id
             }
         });
 
-        if (!cleExistante) {
-            return json({ error: 'Clé non trouvée' }, { status: 404 });
+        if (!key) {
+            console.log('DELETE /api/keys/[id] - Clé non trouvée');
+            return json({ error: 'Clé API non trouvée' }, { status: 404 });
         }
 
+        console.log('DELETE /api/keys/[id] - Clé trouvée:', key);
+
         await prisma.cleApi.delete({
-            where: { id }
+            where: {
+                id: parseInt(params.id)
+            }
         });
 
-        return json({ success: true });
-
+        console.log('DELETE /api/keys/[id] - Clé supprimée avec succès');
+        return json({ message: 'Clé API supprimée avec succès' });
     } catch (error) {
         console.error('Erreur lors de la suppression de la clé API:', error);
         return json({ error: 'Erreur serveur' }, { status: 500 });
     }
-} 
+}

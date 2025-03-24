@@ -6,6 +6,7 @@ import { redirect } from '@sveltejs/kit';
  * Liste des routes publiques qui ne nécessitent pas d'authentification
  */
 const publicRoutes = [
+    '/',
     '/login',
     '/register',
     '/verify-email',

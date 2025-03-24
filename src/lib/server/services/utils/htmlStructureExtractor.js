@@ -20,7 +20,7 @@ export class HtmlStructureExtractor {
     /**
      * Transforme le HTML en format structuré
      * @param {string} html - Le HTML brut à transformer
-     * @returns {string} Le contenu structuré
+     * @returns {string} Le contenu structuré en HTML
      */
     extract(html) {
         try {
@@ -41,7 +41,7 @@ export class HtmlStructureExtractor {
                 if (this.relevantTags.headings.includes(tagName)) {
                     const text = $el.text().trim();
                     if (text) {
-                        output.push(`${'\n'.repeat(2)}${tagName.toUpperCase()}: ${text}`);
+                        output.push(`<${tagName}>${text}</${tagName}>`);
                     }
                 }
                 
@@ -55,44 +55,47 @@ export class HtmlStructureExtractor {
                         }
                         
                         if (tagName === 'blockquote') {
-                            output.push(`${'\n'.repeat(2)}Citation: "${text}"`);
+                            output.push(`<blockquote>${text}</blockquote>`);
                         } else {
-                            output.push(`${'\n'}${text}`);
+                            output.push(`<${tagName}>${text}</${tagName}>`);
                         }
                     }
                 }
                 
                 // Traitement des listes
                 else if (this.relevantTags.lists.includes(tagName)) {
-                    output.push('\n'); // Espace avant la liste
+                    let listContent = [];
                     const isOrdered = tagName === 'ol';
-                    let itemNumber = 1;
                     
                     $el.children('li').each((_, li) => {
                         const $li = $(li);
                         const text = $li.text().trim();
                         if (text) {
-                            const prefix = isOrdered ? `${itemNumber}. ` : '• ';
-                            output.push(`${prefix}${text}`);
-                            itemNumber++;
+                            listContent.push(`<li>${text}</li>`);
                         }
                         
                         // Traitement des sous-listes
                         $li.children('ul, ol').each((_, subList) => {
                             const $subList = $(subList);
-                            const isSubOrdered = subList.tagName.toLowerCase() === 'ol';
-                            let subItemNumber = 1;
+                            const subTagName = subList.tagName.toLowerCase();
+                            let subListContent = [];
                             
                             $subList.children('li').each((_, subLi) => {
                                 const text = $(subLi).text().trim();
                                 if (text) {
-                                    const prefix = isSubOrdered ? `   ${subItemNumber}. ` : '   • ';
-                                    output.push(`${prefix}${text}`);
-                                    subItemNumber++;
+                                    subListContent.push(`<li>${text}</li>`);
                                 }
                             });
+                            
+                            if (subListContent.length) {
+                                listContent.push(`<${subTagName}>${subListContent.join('')}</${subTagName}>`);
+                            }
                         });
                     });
+                    
+                    if (listContent.length) {
+                        output.push(`<${tagName}>${listContent.join('')}</${tagName}>`);
+                    }
                 }
                 
                 // Traitement des liens
@@ -102,20 +105,31 @@ export class HtmlStructureExtractor {
                     if (text && href && !href.startsWith('#')) {
                         // Ne pas dupliquer si déjà dans un autre élément
                         if (!$el.parents(Object.values(this.relevantTags).flat().join(',')).length) {
-                            output.push(`${'\n'}Lien: ${text} (${href})`);
+                            output.push(`<a href="${href}">${text}</a>`);
                         }
                     }
                 }
                 
                 // Traitement des tableaux
                 else if (tagName === 'table') {
-                    output.push('\n\nTableau:');
+                    let tableContent = [];
                     $el.find('tr').each((_, row) => {
-                        const cells = $(row).find('td, th').map((_, cell) => $(cell).text().trim()).get();
-                        if (cells.length) {
-                            output.push(`\n${cells.join(' | ')}`);
+                        let rowContent = [];
+                        $(row).find('td, th').each((_, cell) => {
+                            const cellTag = cell.tagName.toLowerCase();
+                            const text = $(cell).text().trim();
+                            if (text) {
+                                rowContent.push(`<${cellTag}>${text}</${cellTag}>`);
+                            }
+                        });
+                        if (rowContent.length) {
+                            tableContent.push(`<tr>${rowContent.join('')}</tr>`);
                         }
                     });
+                    
+                    if (tableContent.length) {
+                        output.push(`<table>${tableContent.join('')}</table>`);
+                    }
                 }
                 
                 // Traitement récursif des enfants
@@ -128,7 +142,7 @@ export class HtmlStructureExtractor {
             $('body').contents().each((_, element) => processElement(element));
 
             // Nettoyage final
-            return this.cleanOutput(output.join(''));
+            return this.cleanOutput(output.join('\n'));
         } catch (error) {
             console.error('Erreur lors de l\'extraction de la structure:', error);
             throw new Error(`Échec de l'extraction: ${error.message}`);
@@ -137,18 +151,18 @@ export class HtmlStructureExtractor {
 
     /**
      * Nettoie la sortie finale
-     * @param {string} text - Le texte à nettoyer
-     * @returns {string} Le texte nettoyé
+     * @param {string} html - Le HTML à nettoyer
+     * @returns {string} Le HTML nettoyé
      */
-    cleanOutput(text) {
-        return text
+    cleanOutput(html) {
+        return html
             .replace(/[\n]{3,}/g, '\n\n') // Limite les sauts de ligne consécutifs
             .replace(/\s+/g, ' ') // Normalise les espaces
             .trim() // Supprime les espaces aux extrémités
             .split('\n') // Traite ligne par ligne
             .map(line => line.trim()) // Nettoie chaque ligne
             .filter(line => line) // Supprime les lignes vides
-            .join('\n'); // Recompose le texte
+            .join('\n'); // Recompose le HTML
     }
 }
 
