@@ -53,13 +53,16 @@ npm run dev
 ### Pages (`src/routes/`)
 ```
 /
-├── login/           # Page de connexion
-├── register/        # Page d'inscription
-├── verify-email/    # Page de vérification d'email
-├── forgot-password/ # Page de mot de passe oublié
-├── reset-password/  # Page de réinitialisation de mot de passe
-├── keys/           # Page de gestion des clés API
-└── dashboard/      # Tableau de bord utilisateur
+├── login/               # Page de connexion
+├── register/            # Page d'inscription
+├── verify-email/        # Page de vérification d'email
+├── forgot-password/     # Page de mot de passe oublié
+├── reset-password/      # Page de réinitialisation de mot de passe
+├── keys/                # Page de gestion des clés API
+├── webpage-scraping/    # Page pour tester l’API par url
+├── google-scraping/     # Page pour tester l’API par url
+└── dashboard/           # Tableau de bord utilisateur
+
 ```
 
 ### API (`src/routes/api/`)
@@ -76,9 +79,12 @@ npm run dev
 │   ├── [id]/          # Opérations sur une clé spécifique
 │   └── +server.js     # Liste et création de clés
 └── scraping/
-    └── auth/
-        ├── webpage    # Scraping de pages web
-        └── google     # Scraping de résultats Google
+    ├── auth/
+    │   ├── webpage    # Scraping de pages web par API
+    │   └── google     # Scraping de résultats Google par API
+    ├── google         # Scraping de résultats Google
+    └── webpage        # Scraping de pages web
+
 ```
 
 ## 3. Documentation API
